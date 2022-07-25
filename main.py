@@ -4,7 +4,7 @@ from multiprocessing import Process, Queue
 from RunFile import Run
 
 if __name__ == '__main__':
-    strategys = [strat.TestStrategy]
+    strategys = [strat.Strategy_2]
 
     for strategy in strategys:
         output = Queue()

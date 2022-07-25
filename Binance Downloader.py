@@ -133,7 +133,7 @@ def df_to_numeric(df):
     df['Volume'] = pd.to_numeric(df['Volume'])
     
     return df
-get_market_data("BTCUSDT", "1m", date(2021,1,1), saveFile=True)
+get_market_data("BTCUSDT", "1d", date(2021,1,1), date(2021,6,10), saveFile=True)
 #KLINE_INTERVAL_1MINUTE = '1m'
 #KLINE_INTERVAL_3MINUTE = '3m'
 #KLINE_INTERVAL_5MINUTE = '5m'
