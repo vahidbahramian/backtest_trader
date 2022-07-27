@@ -29,7 +29,8 @@ def Run(strategy, out):
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     # datapath = os.path.join(modpath, 'data\\Binance_BTCUSDT_4h_2021-01-01 00-00-00_2022-06-22 16-00-00.csv')
-    datapath = os.path.join(modpath, 'data\\Binance_BTCUSDT_1m_2021-01-01 00-00-00_2022-06-26 14-30-00.csv')
+    datapath = os.path.join(modpath, 'data\\Binance_ETHUSDT_1h_2021-01-01 00-00-00_2022-07-24 23-00-00.csv')
+    # datapath1 = os.path.join(modpath, 'data\\Binance_BTCUSDT_1m_2021-01-01 00-00-00_2022-06-26 14-30-00.csv')
     # Create a Data Feed
     # data = bt.feeds.YahooFinanceCSVData(
     #     dataname=datapath,
@@ -39,11 +40,12 @@ def Run(strategy, out):
     #     todate=datetime.datetime(2000, 12, 31),
     #     # Do not pass values after this date
     #     reverse=False)
-    data = bt.feeds.BacktraderCSVData(dataname=datapath)
-
+    data = bt.feeds.GenericCSVData(dataname=datapath, timeframe=bt.TimeFrame.Minutes, compression=60)
+    # data1 = bt.feeds.GenericCSVData(dataname=datapath1, timeframe=bt.TimeFrame.Minutes, compression=60)
     # Add the Data Feed to Cerebro
-    # cerebro.adddata(data)
-    cerebro.replaydata(data, timeframe=bt.TimeFrame.Minutes, compression=60)
+    # cerebro.adddata(data1)
+    cerebro.adddata(data)
+    # cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=60)
     # cerebro.adddata(data)
 
     # Set our desired cash start
@@ -63,7 +65,7 @@ def Run(strategy, out):
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='mysharpe')
     cerebro.addanalyzer(bt.analyzers.Returns, _name='myreturns')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='mydrowdown')
-    results = cerebro.run(tradehistory=True)
+    results = cerebro.run(tradehistory=True, timeframe=bt.TimeFrame.Minutes, compression=60)
     res = results[0]
     print('Sharpe Ratio:', res.analyzers.mysharpe.get_analysis())
     print('Returns:', res.analyzers.myreturns.get_analysis())
