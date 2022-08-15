@@ -137,7 +137,7 @@ class Strategy_1(bt.Strategy):
 
 class Strategy_2(bt.Strategy):
     params = (
-        ('maperiod', 50),
+        ('maperiod', 25),
     )
 
     def log(self, txt, dt=None):
@@ -154,9 +154,17 @@ class Strategy_2(bt.Strategy):
         self.buyprice = None
         self.buycomm = None
 
-        self.super_trend = ind.SuperTrend(self.datas[0], plot=False)
+        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)
+        self.avg = bt.indicators.SimpleMovingAverage(self.dataclose / self.sma, period=25)
+        self.super_trend_S = ind.SuperTrend_S(self.datas[0], plot=False)
+        self.super_trend_F = ind.SuperTrend_F(self.datas[0], plot=False)
         self.ichimoku = bt.indicators.Ichimoku(self.datas[0], senkou_lead=0, plot=False)
         self.macd = bt.indicators.MACD(self.datas[0], plot=False)
+        self.rsi = bt.indicators.RSI(self.datas[0], period=100,  plot=False)
+        self.momentum = bt.indicators.Momentum(self.datas[0], period=20, plot=False)
+        self.atr = bt.indicators.ATR(self.datas[0], plot=False)
+        self.stddev = bt.indicators.StandardDeviation(self.dataclose, period=25, plot=False)
+
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -197,10 +205,15 @@ class Strategy_2(bt.Strategy):
                  (trade.pnl, trade.pnlcomm))
 
     def next(self):
-        self.log('Super_Trend, %2f' % self.super_trend[0])
-        self.log('UpperBand, %2f' % self.super_trend.l.final_upperband[0])
-        self.log('LowerBand, %2f' % self.super_trend.l.final_lowerband[0])
-        self.log('Close, %.2f' % self.dataclose[0])
+        E = 0
+        STD = 0
+        for i in range(0, -51):
+            E += (self.dataclose[i] - self.sma[0])
+        STD = E / self.sma[0]
+        #self.log('Super_Trend, %2f' % self.super_trend[0])
+        #self.log('UpperBand, %2f' % self.super_trend.l.final_upperband[0])
+        #self.log('LowerBand, %2f' % self.super_trend.l.final_lowerband[0])
+        #self.log('Close, %.2f' % self.dataclose[0])
 
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
@@ -210,27 +223,40 @@ class Strategy_2(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.ichimoku.l.senkou_span_b[-25] > self.ichimoku.l.senkou_span_a[-25] or \
-                    self.dataclose[0] < self.ichimoku.l.senkou_span_b[-25]:
-                if self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
-                        self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]:
-                    if self.super_trend[-1] == 0 and self.super_trend[0] == 1:
-                        # BUY, BUY, BUY!!! (with all possible default parameters)
-                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
+            if self.dataclose[0] < self.ichimoku.l.senkou_span_b[-25]:
+                    #self.sma[0] > self.dataclose[0]:
+                    #self.dataclose[0] < self.ichimoku.l.senkou_span_b[-25] and self.avg > 1:
+                #self.ichimoku.l.senkou_span_b[-25] > self.ichimoku.l.senkou_span_a[-25]):
+                #(self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.atr[0]
+                    if (self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
+                          self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25] and
+                          (1 - self.stddev[0] / self.sma[0]) < self.avg[0]) or \
+                          ((self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.stddev[0] and
+                          (self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0]) / 2 < self.dataclose[0]):
+                          #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]) > 3 * self.atr[0]
+                          #(self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0])/2 < self.dataclose[0] and \
+                          #self.ichimoku.l.senkou_span_a[0] >= self.ichimoku.l.senkou_span_a[-1] and self.momentum[0] > 0)
 
-                        # Keep track of the created order to avoid a 2nd order
-                        self.order = self.buy()
+                        if self.super_trend_F[-1] == 0 and self.super_trend_F[0] == 1:
+                            # BUY, BUY, BUY!!! (with all possible default parameters)
+                            self.log('BUY CREATE, %.2f' % self.dataclose[0])
+
+                            # Keep track of the created order to avoid a 2nd order
+                            self.order = self.buy()
             else:
-                if self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
-                        self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25] or self.macd[0] > 0:
-                    if self.super_trend[-1] == 0 and self.super_trend[0] == 1:
-                        # BUY, BUY, BUY!!! (with all possible default parameters)
-                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
+                if (1 - self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + 2 * self.stddev[0]/self.sma[0]) and \
+                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < self.stddev[0]:
+                        #self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
+                        #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]):
+                    if self.super_trend_F[-1] == 0 and self.super_trend_F[0] == 1:
+                            # BUY, BUY, BUY!!! (with all possible default parameters)
+                            self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
-                        # Keep track of the created order to avoid a 2nd order
-                        self.order = self.buy()
+                            # Keep track of the created order to avoid a 2nd order
+                            self.order = self.buy()
+
         else:
-            if self.super_trend[-1] == 1 and self.super_trend[0] == 0:
+            if self.super_trend_F[-1] == 1 and self.super_trend_F[0] == 0:
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 

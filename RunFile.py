@@ -29,7 +29,7 @@ def Run(strategy, out):
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     # datapath = os.path.join(modpath, 'data\\Binance_BTCUSDT_4h_2021-01-01 00-00-00_2022-06-22 16-00-00.csv')
-    datapath = os.path.join(modpath, 'data\\Binance_ETHUSDT_1h_2021-01-01 00-00-00_2022-07-24 23-00-00.csv')
+    datapath = os.path.join(modpath, 'data\\Binance_ETHUSDT_1h_2018-01-01 00-00-00_2022-07-24 23-00-00.csv')
     # datapath1 = os.path.join(modpath, 'data\\Binance_BTCUSDT_1m_2021-01-01 00-00-00_2022-06-26 14-30-00.csv')
     # Create a Data Feed
     # data = bt.feeds.YahooFinanceCSVData(
