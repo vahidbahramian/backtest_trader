@@ -228,11 +228,12 @@ class Strategy_2(bt.Strategy):
                     #self.dataclose[0] < self.ichimoku.l.senkou_span_b[-25] and self.avg > 1:
                 #self.ichimoku.l.senkou_span_b[-25] > self.ichimoku.l.senkou_span_a[-25]):
                 #(self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.atr[0]
-                    if (self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
+                    if (self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] <
                           self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25] and
-                          (1 - self.stddev[0] / self.sma[0]) < self.avg[0]) or \
+                          (1) < self.avg[0]) or \
                           ((self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.stddev[0] and
-                          (self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0]) / 2 < self.dataclose[0]):
+                          (self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0]) / 2 < self.dataclose[0] and
+                          (1 - 2 * self.stddev[0] / self.sma[0]) > self.avg[0]):
                           #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]) > 3 * self.atr[0]
                           #(self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0])/2 < self.dataclose[0] and \
                           #self.ichimoku.l.senkou_span_a[0] >= self.ichimoku.l.senkou_span_a[-1] and self.momentum[0] > 0)
@@ -244,8 +245,8 @@ class Strategy_2(bt.Strategy):
                             # Keep track of the created order to avoid a 2nd order
                             self.order = self.buy()
             else:
-                if (1 - self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + 2 * self.stddev[0]/self.sma[0]) and \
-                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < self.stddev[0]:
+                if (1 - 2 * self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + self.stddev[0]/self.sma[0]) and \
+                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < 5 * self.stddev[0]:
                         #self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
                         #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]):
                     if self.super_trend_F[-1] == 0 and self.super_trend_F[0] == 1:
