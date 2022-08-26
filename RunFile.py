@@ -5,7 +5,6 @@ import datetime  # For datetime objects
 import os.path  # To manage paths
 import random
 import re
-import datefinder
 import sys  # To find out the script name (in argv[0])
 
 # Import the backtrader platform
@@ -29,13 +28,16 @@ def get_asset(s_date):
     return match
 
 def Run(strategy, out):
+
+    results_data = {'Currency': [], 'SharpRatio': [], 'MaPeriod': []}
+
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     data_path = os.path.join(modpath, 'data\\Binance_BNBUSDT_1h_2018-01-01 00-00-00_2022-07-31 23-00-00.csv')
-    results_data['Currency'] = get_asset(data_path)
+    asset = get_asset(data_path)
     range_dates = get_date(data_path)
-    dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=pd.offsets.MonthBegin(1))
+    dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=pd.offsets.MonthBegin(6))
     for i in range(len(dates)-1):
         data = bt.feeds.GenericCSVData(dataname=data_path, timeframe=bt.TimeFrame.Minutes, compression=60,
                                        fromdate=datetime.datetime.utcfromtimestamp(dates.values[i].tolist() / 1e9),
@@ -80,9 +82,11 @@ def Run(strategy, out):
             print(res)
             for strat in res:
                 print('Sharpe Ratio:', strat.analyzers.mysharpe.get_analysis())
-                results_data['Sharpe Ratio'] = strat.analyzers.mysharpe.get_analysis()['sharperatio']
                 print(strat.p._getkwargs()['maperiod'])
                 print('--------------------------------------------------')
+                results_data['Currency'].append(asset)
+                results_data['SharpRatio'].append(strat.analyzers.mysharpe.get_analysis()['sharperatio'])
+                results_data['MaPeriod'].append(strat.p._getkwargs()['maperiod'])
         print('==================================================')
 
         # res = results[0]
@@ -113,3 +117,4 @@ def Run(strategy, out):
         # quantstats.plots.snapshot(positions, title='Facebook Performance')
 
         # matplotlib.pyplot.show()
+    pd.DataFrame(results_data).to_csv('Results\\result.csv')
