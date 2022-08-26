@@ -143,7 +143,7 @@ class Strategy_2(bt.Strategy):
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
         dt = dt or self.datas[0].datetime.datetime(0)
-        print('%s, %s' % (dt.isoformat(), txt))
+        # print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
