@@ -34,23 +34,35 @@ def get_timeframe(s_date):
 
 def Run(strategy, out):
 
-    results_data = {'Strategy Name': [], 'Currency': [], 'TimeFrame': [], 'Total_Asset_Return': [],
-                    'Total_Strategy_Return': []}
-
+    results_data_columns = [('', 'Strategy Name'), ('', 'Currency'), ('', 'TimeFrame'),
+                            ('Total_Return', 'Asset'), ('Total_Return', 'Strategy'),
+                            ('Total_Return', 'Diff')]
+    results_data_rows = {'Strategy Name': [], 'Currency': [], 'TimeFrame': [], 'Total_Asset_Return': [],
+                         'Total_Strategy_Return': [], 'Total_Diff_Return': []}
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    data_path = os.path.join(modpath, 'data\\Binance_BTCUSDT_1h_2021-01-01 00-00-00_2022-06-25 16-00-00.csv')
+    data_path = os.path.join(modpath, 'data\\Binance_BNBUSDT_1h_2021-07-01 00-00-00_2022-07-31 23-00-00.csv')
     asset = get_asset(data_path)
     range_dates = get_date(data_path)
     timeframe = get_timeframe(data_path)
-    # dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=pd.offsets.MonthBegin(2))
-    dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=None, periods=2)
-    for i in range(len(dates)-1):
+    divided_dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=pd.offsets.MonthBegin(2))
+    all_range_dates = pd.date_range(start=range_dates[0], end=range_dates[1], freq=None, periods=2)
+    dates = ((all_range_dates[0], all_range_dates[1]),)
+    dates = dates + tuple((divided_dates[i], divided_dates[i+1]) for i in range(len(divided_dates)-1))
+    for index, v in enumerate(dates):
+        from_date = datetime.datetime.fromtimestamp(v[0].value / 1e9).strftime('%Y-%m-%d')
+        to_date = datetime.datetime.fromtimestamp(v[1].value / 1e9).strftime('%Y-%m-%d')
         data = bt.feeds.GenericCSVData(dataname=data_path, timeframe=bt.TimeFrame.Minutes, compression=60,
-                                       fromdate=datetime.datetime.utcfromtimestamp(dates.values[i].tolist() / 1e9),
-                                       todate=datetime.datetime.utcfromtimestamp(dates.values[i+1].tolist() / 1e9))
-        results_data['']
+                                       fromdate=datetime.datetime.strptime(from_date, "%Y-%m-%d"),
+                                       todate=datetime.datetime.strptime(to_date, "%Y-%m-%d"))
+        if index > 0:
+            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Asset'))
+            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Strategy'))
+            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Diff'))
+            results_data_rows['MaxDrowDown_Asset_' + str(index)] = []
+            results_data_rows['MaxDrowDown_Strategy_' + str(index)] = []
+            results_data_rows['MaxDrowDown_Diff_' + str(index)] = []
         for st in strategy:
             # Create a cerebro entity
             # cerebro = bt.Cerebro()
@@ -91,14 +103,22 @@ def Run(strategy, out):
             print('==================================================')
             for res in results:
                 for strat in res:
-                    ret = 0
-                    for i in list(strat.analyzers.timereturn.get_analysis().items()):
-                        ret += i[1]
-                    if strat.strategycls.__name__ == "BuyAndHold":
-                        results_data['Total_Asset_Return'].append(ret)
+                    if index == 0:
+                        ret = 0
+                        for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                            ret += i[1]
+                        if strat.strategycls.__name__ == "BuyAndHold":
+                            results_data_rows['Total_Asset_Return'].append(ret)
+                        else:
+                            results_data_rows['Total_Strategy_Return'].append(ret)
+                            results_data_rows['Strategy Name'].append(strat.strategycls.__name__)
                     else:
-                        results_data['Total_Strategy_Return'].append(ret)
-                        results_data['Strategy Name'].append(strat.strategycls.__name__)
+                        if strat.strategycls.__name__ == "BuyAndHold":
+                            results_data_rows['MaxDrowDown_Asset_' + str(index)].append(
+                                strat.analyzers.drowdown.get_analysis()['max']['drawdown'])
+                        else:
+                            results_data_rows['MaxDrowDown_Strategy_' + str(index)].append(
+                                strat.analyzers.drowdown.get_analysis()['max']['drawdown'])
             print('==================================================')
             # res = results[0]
             # print('Sharpe Ratio:', res.analyzers.mysharpe.get_analysis())
@@ -129,6 +149,17 @@ def Run(strategy, out):
             # quantstats.plots.snapshot(positions, title='Facebook Performance')
 
             # matplotlib.pyplot.show()
-        results_data['Currency'].append(asset)
-        results_data['TimeFrame'].append(timeframe)
-    pd.DataFrame(results_data).to_csv('Results\\result.csv')
+        if index == 0:
+            results_data_rows['Currency'].append(asset)
+            results_data_rows['TimeFrame'].append(timeframe)
+            results_data_rows['Total_Diff_Return'].append(results_data_rows['Total_Asset_Return'][-1] -
+                                                          results_data_rows['Total_Strategy_Return'][-1])
+        else:
+            results_data_rows['MaxDrowDown_Diff_' + str(index)].append(
+                results_data_rows['MaxDrowDown_Asset_' + str(index)][-1] -
+                results_data_rows['MaxDrowDown_Strategy_' + str(index)][-1])
+    columns = pd.MultiIndex.from_tuples(results_data_columns)
+    df = pd.DataFrame(results_data_rows)
+    df.columns = columns
+    df.to_excel('Results\\result.xlsx', merge_cells=True)
+    # pd.DataFrame(results_data).to_csv('Results\\result.csv')
