@@ -13,7 +13,7 @@ import time
 
 
 import backtrader as bt
-from backtrader.mathsupport import standarddev
+from backtrader.mathsupport import average, standarddev
 import matplotlib.pyplot
 import pandas as pd
 
@@ -34,15 +34,15 @@ def get_timeframe(s_date):
 
 def Run(strategy, out):
 
-    results_data_columns = [('', 'Strategy Name'), ('', 'Currency'), ('', 'TimeFrame'),
-                            ('Total_Return', 'Asset'), ('Total_Return', 'Strategy'),
-                            ('Total_Return', 'Diff')]
+    results_data_columns = [('', '', 'Strategy Name'), ('', '', 'Currency'), ('', '', 'TimeFrame'),
+                            ('', 'Total_Return', 'Asset'), ('', 'Total_Return', 'Strategy'),
+                            ('', 'Total_Return', 'Diff')]
     results_data_rows = {'Strategy Name': [], 'Currency': [], 'TimeFrame': [], 'Total_Asset_Return': [],
                          'Total_Strategy_Return': [], 'Total_Diff_Return': []}
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    data_path = os.path.join(modpath, 'data\\Binance_BNBUSDT_1h_2021-07-01 00-00-00_2022-07-31 23-00-00.csv')
+    data_path = os.path.join(modpath, 'data\\Binance_BNBUSDT_1h_2022-05-01 00-00-00_2022-07-31 23-00-00.csv')
     asset = get_asset(data_path)
     range_dates = get_date(data_path)
     timeframe = get_timeframe(data_path)
@@ -57,12 +57,29 @@ def Run(strategy, out):
                                        fromdate=datetime.datetime.strptime(from_date, "%Y-%m-%d"),
                                        todate=datetime.datetime.strptime(to_date, "%Y-%m-%d"))
         if index > 0:
-            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Asset'))
-            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Strategy'))
-            results_data_columns.append(('Month_' + str(index) + 'MaxDrawdown(%)', 'Diff'))
-            results_data_rows['MaxDrowDown_Asset_' + str(index)] = []
-            results_data_rows['MaxDrowDown_Strategy_' + str(index)] = []
-            results_data_rows['MaxDrowDown_Diff_' + str(index)] = []
+            month_title = from_date.split('-')[0] + '/' + from_date.split('-')[1] + '-' +\
+                          to_date.split('-')[0] + '/' + to_date.split('-')[1]
+            results_data_columns.append((month_title, 'Return', 'Asset'))
+            results_data_columns.append((month_title, 'Return', 'Strategy'))
+            results_data_columns.append((month_title, 'STD', ''))
+            results_data_columns.append((month_title, 'MaxDrawdown(%)', 'Asset' ))
+            results_data_columns.append((month_title, 'MaxDrawdown(%)', 'Strategy'))
+            results_data_columns.append((month_title, 'MaxDrawdown(%)', 'Diff'))
+            results_data_columns.append((month_title, 'MaxDrawdown(Time)', 'Asset'))
+            results_data_columns.append((month_title, 'MaxDrawdown(Time)', 'Strategy'))
+            results_data_columns.append((month_title, 'MaxDrawdown(Time)', 'Diff'))
+            results_data_rows['Return_Asset_' + str(index)] = []
+            results_data_rows['Return_Strategy_' + str(index)] = []
+            results_data_rows['STD_' + str(index)] = []
+            results_data_rows['MaxDrowDown(%)_Asset_' + str(index)] = []
+            results_data_rows['MaxDrowDown(%)_Strategy_' + str(index)] = []
+            results_data_rows['MaxDrowDown(%)_Diff_' + str(index)] = []
+            results_data_rows['MaxDrowDown(Time)_Asset_' + str(index)] = []
+            results_data_rows['MaxDrowDown(Time)_Strategy_' + str(index)] = []
+            results_data_rows['MaxDrowDown(Time)_Diff_' + str(index)] = []
+
+        ret_asset = []
+        ret_strategy = []
         for st in strategy:
             # Create a cerebro entity
             # cerebro = bt.Cerebro()
@@ -114,11 +131,23 @@ def Run(strategy, out):
                             results_data_rows['Strategy Name'].append(strat.strategycls.__name__)
                     else:
                         if strat.strategycls.__name__ == "BuyAndHold":
-                            results_data_rows['MaxDrowDown_Asset_' + str(index)].append(
+                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                                if i[1] != 0:
+                                    ret_asset.append(i[1])
+                            results_data_rows['MaxDrowDown(%)_Asset_' + str(index)].append(
                                 strat.analyzers.drowdown.get_analysis()['max']['drawdown'])
+                            results_data_rows['MaxDrowDown(Time)_Asset_' + str(index)].append(
+                                strat.analyzers.drowdown.get_analysis()['len'])
+                            results_data_rows['Return_Asset_' + str(index)].append(sum(ret_asset))
                         else:
-                            results_data_rows['MaxDrowDown_Strategy_' + str(index)].append(
+                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                                if i[1] != 0:
+                                    ret_strategy.append(i[1])
+                            results_data_rows['MaxDrowDown(%)_Strategy_' + str(index)].append(
                                 strat.analyzers.drowdown.get_analysis()['max']['drawdown'])
+                            results_data_rows['MaxDrowDown(Time)_Strategy_' + str(index)].append(
+                                strat.analyzers.drowdown.get_analysis()['len'])
+                            results_data_rows['Return_Strategy_' + str(index)].append(sum(ret_strategy))
             print('==================================================')
             # res = results[0]
             # print('Sharpe Ratio:', res.analyzers.mysharpe.get_analysis())
@@ -155,11 +184,15 @@ def Run(strategy, out):
             results_data_rows['Total_Diff_Return'].append(results_data_rows['Total_Asset_Return'][-1] -
                                                           results_data_rows['Total_Strategy_Return'][-1])
         else:
-            results_data_rows['MaxDrowDown_Diff_' + str(index)].append(
-                results_data_rows['MaxDrowDown_Asset_' + str(index)][-1] -
-                results_data_rows['MaxDrowDown_Strategy_' + str(index)][-1])
+            results_data_rows['STD_' + str(index)].append((average(ret_strategy) - average(ret_asset)) / standarddev(ret_asset))
+            results_data_rows['MaxDrowDown(%)_Diff_' + str(index)].append(
+                results_data_rows['MaxDrowDown(%)_Asset_' + str(index)][-1] -
+                results_data_rows['MaxDrowDown(%)_Strategy_' + str(index)][-1])
+            results_data_rows['MaxDrowDown(Time)_Diff_' + str(index)].append(
+                results_data_rows['MaxDrowDown(Time)_Asset_' + str(index)][-1] -
+                results_data_rows['MaxDrowDown(Time)_Strategy_' + str(index)][-1])
     columns = pd.MultiIndex.from_tuples(results_data_columns)
     df = pd.DataFrame(results_data_rows)
     df.columns = columns
-    df.to_excel('Results\\result.xlsx', merge_cells=True)
+    df.to_excel('Results\\' + asset + timeframe + '.xlsx', merge_cells=True)
     # pd.DataFrame(results_data).to_csv('Results\\result.csv')

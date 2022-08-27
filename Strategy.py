@@ -138,6 +138,15 @@ class Strategy_1(bt.Strategy):
 class Strategy_2(bt.Strategy):
     params = (
         ('maperiod', 25),
+        ('avg_period', 25),
+        ('std_period', 25),
+        ('multiplier', 2),
+        ('a', 1),
+        ('b', 1),
+        ('c', 1),
+        ('d', 1),
+        ('x', 1),
+        ('y', 1),
     )
 
     def log(self, txt, dt=None):
@@ -155,15 +164,15 @@ class Strategy_2(bt.Strategy):
         self.buycomm = None
 
         self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)
-        self.avg = bt.indicators.SimpleMovingAverage(self.dataclose / self.sma, period=25)
-        self.super_trend_S = ind.SuperTrend_S(self.datas[0], plot=False)
-        self.super_trend_F = ind.SuperTrend_F(self.datas[0], plot=False)
+        self.avg = bt.indicators.SimpleMovingAverage(self.dataclose / self.sma, period=self.params.avg_period)
+        # self.super_trend_S = ind.SuperTrend_S(self.datas[0], plot=False)
+        self.super_trend_F = ind.SuperTrend_F(self.datas[0], plot=False, multiplier=self.params.multiplier)
         self.ichimoku = bt.indicators.Ichimoku(self.datas[0], senkou_lead=0, plot=False)
-        self.macd = bt.indicators.MACD(self.datas[0], plot=False)
-        self.rsi = bt.indicators.RSI(self.datas[0], period=100,  plot=False)
-        self.momentum = bt.indicators.Momentum(self.datas[0], period=20, plot=False)
+        # self.macd = bt.indicators.MACD(self.datas[0], plot=False)
+        # self.rsi = bt.indicators.RSI(self.datas[0], period=100,  plot=False)
+        # self.momentum = bt.indicators.Momentum(self.datas[0], period=20, plot=False)
         self.atr = bt.indicators.ATR(self.datas[0], plot=False)
-        self.stddev = bt.indicators.StandardDeviation(self.dataclose, period=25, plot=False)
+        self.stddev = bt.indicators.StandardDeviation(self.dataclose, period=self.params.std_period, plot=False)
 
 
     def notify_order(self, order):
@@ -230,10 +239,10 @@ class Strategy_2(bt.Strategy):
                 #(self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.atr[0]
                     if (self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] <
                           self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25] and
-                          (1) < self.avg[0]) or \
-                          ((self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > 2 * self.stddev[0] and
+                          (1 - self.params.a * self.stddev[0] / self.sma[0]) < self.avg[0]) or \
+                          ((self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0]) > self.params.x * self.stddev[0] and
                           (self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0]) / 2 < self.dataclose[0] and
-                          (1 - 2 * self.stddev[0] / self.sma[0]) > self.avg[0]):
+                          (1 - self.params.b * self.stddev[0] / self.sma[0]) > self.avg[0]):
                           #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]) > 3 * self.atr[0]
                           #(self.ichimoku.l.senkou_span_b[0] + self.ichimoku.l.senkou_span_a[0])/2 < self.dataclose[0] and \
                           #self.ichimoku.l.senkou_span_a[0] >= self.ichimoku.l.senkou_span_a[-1] and self.momentum[0] > 0)
@@ -245,8 +254,8 @@ class Strategy_2(bt.Strategy):
                             # Keep track of the created order to avoid a 2nd order
                             self.order = self.buy()
             else:
-                if (1 - 2 * self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + self.stddev[0]/self.sma[0]) and \
-                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < 5 * self.stddev[0]:
+                if (1 - self.params.c * self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + self.params.d * self.stddev[0]/self.sma[0]) and \
+                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < self.params.y * self.stddev[0]:
                         #self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
                         #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]):
                     if self.super_trend_F[-1] == 0 and self.super_trend_F[0] == 1:
