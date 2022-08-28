@@ -1,6 +1,5 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
 import datetime  # For datetime objects
 import os.path  # To manage paths
 import random
@@ -18,7 +17,10 @@ import matplotlib.pyplot
 import pandas as pd
 
 import quantstats
+import warnings
+warnings.filterwarnings('ignore')
 import pyfolio as pf
+
 
 def get_date(s_date):
     match = re.findall(r'\d{4}-\d{2}-\d{2}', s_date)
@@ -92,6 +94,7 @@ def Run(strategy, params, file_path, divide_to_months):
         max_dd_asset_time = 0
         ret_asset = []
         for st in strategy:
+            start_time = time.time()
             # Create a cerebro entity
             # cerebro = bt.Cerebro()
             cerebro = bt.Cerebro(maxcpus=4, runonce=False, optreturn=True)
@@ -121,33 +124,32 @@ def Run(strategy, params, file_path, divide_to_months):
             # cerebro.addwriter(bt.WriterFile, csv=True, out="1.csv")
 
             # Print out the starting conditions
-            print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+            # print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
             # Add analysis to cerebro
             cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio', timeframe=bt.TimeFrame.Minutes, compression=60)
             cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='mysharpe', timeframe=bt.TimeFrame.Minutes,
                                 compression=60)
             cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='timereturn', timeframe=bt.TimeFrame.Minutes,
-                                compression=1)
+                                compression=60)
             cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drowdown')
             cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name='timedrowdown', timeframe=bt.TimeFrame.Minutes,
                                 compression=60)
 
             results = cerebro.run(timeframe=bt.TimeFrame.Minutes, compression=60)
 
-            print('==================================================')
-
-            sum_return_strategy = 0
+            ### Log Bloc
             for res in results:
                 for strat in res:
                     ret_strategy = []
+                    sum_return_strategy = 0
                     if index == 0:
-                        for i in list(strat.analyzers.timereturn.get_analysis().items()):
-                            if strat.strategycls.__name__ == "BuyAndHold":
-                                sum_return_asset += i[1]
-                            else:
-                                sum_return_strategy += i[1]
-                        if strat.strategycls.__name__ != "BuyAndHold":
+                        print(strat.strategycls.__name__)
+                        if strat.strategycls.__name__ == "BuyAndHold":
+                            sum_return_asset = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
+                        else:
+                            sum_return_strategy = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
+                            print(sum_return_strategy)
                             results_data_rows['Strategy Name'].append(strat.strategycls.__name__)
                             results_data_rows['Currency'].append(asset)
                             results_data_rows['TimeFrame'].append(timeframe)
@@ -182,7 +184,7 @@ def Run(strategy, params, file_path, divide_to_months):
                                                                                                  'maxdrawdownperiod'])
                             results_data_rows['STD_' + str(index)].append((average(ret_strategy) - average(ret_asset))
                                                                           / standarddev(ret_asset))
-            print('==================================================')
+            ###########################################################
             # res = results[0]
             # print('Sharpe Ratio:', res.analyzers.mysharpe.get_analysis())
             # print('Returns:', res.analyzers.myreturns.get_analysis())
@@ -212,6 +214,9 @@ def Run(strategy, params, file_path, divide_to_months):
             # quantstats.plots.snapshot(positions, title='Facebook Performance')
 
             # matplotlib.pyplot.show()
+
+            print("From:", from_date, "To:", to_date, "\n", "Strategy =", st.__name__,  "\n", "Process Time =",
+                  (time.time() - start_time), "s")
     columns = pd.MultiIndex.from_tuples(results_data_columns)
     print(results_data_rows)
     df = pd.DataFrame(results_data_rows)
