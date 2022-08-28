@@ -137,7 +137,7 @@ class Strategy_1(bt.Strategy):
 
 class Strategy_2(bt.Strategy):
     params = (
-        ('maperiod', 25),
+        ('ma_period', 25),
         ('avg_period', 25),
         ('std_period', 25),
         ('multiplier', 2),
@@ -163,7 +163,7 @@ class Strategy_2(bt.Strategy):
         self.buyprice = None
         self.buycomm = None
 
-        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.maperiod)
+        self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.ma_period)
         self.avg = bt.indicators.SimpleMovingAverage(self.dataclose / self.sma, period=self.params.avg_period)
         # self.super_trend_S = ind.SuperTrend_S(self.datas[0], plot=False)
         self.super_trend_F = ind.SuperTrend_F(self.datas[0], plot=False, multiplier=self.params.multiplier)

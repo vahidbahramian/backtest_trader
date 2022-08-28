@@ -15,4 +15,9 @@ if __name__ == '__main__':
     # for strategy in strategys:
     #     output = Queue()
     #     p = Run(strategy, output)
-    Run(strategys, None)
+
+    parameters = {'ma_period': [20, 25, 30], 'avg_period': [20, 25, 30], 'std_period': 25, 'multiplier': [1, 2],
+                  'a': 1, 'b': 1, 'c': 1, 'd': 1, 'x': 1, 'y': 1}
+    file_path = "Binance_TRXUSDT_1m_2018-06-11 11-30-00_2022-06-27 08-31-00.csv"
+    divide_to_months = True
+    Run(strategys, parameters, file_path, divide_to_months)
