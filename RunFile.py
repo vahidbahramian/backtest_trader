@@ -36,6 +36,7 @@ def get_timeframe(s_date):
 
 
 def Run(strategy, params, file_path, divide_to_months):
+    start_analyze_time = time.time()
     results_data_columns = [('', '', 'Strategy Name'), ('', '', 'Currency'), ('', '', 'TimeFrame'),
                             ('', 'Total_Return', 'Asset'), ('', 'Total_Return', 'Strategy'),
                             ('', 'Total_Return', 'Diff')]
@@ -97,7 +98,7 @@ def Run(strategy, params, file_path, divide_to_months):
             start_time = time.time()
             # Create a cerebro entity
             # cerebro = bt.Cerebro()
-            cerebro = bt.Cerebro(maxcpus=4, runonce=False, optreturn=True)
+            cerebro = bt.Cerebro(runonce=False, optreturn=True)
 
             # Add a strategy
             if st.__name__ == "BuyAndHold":
@@ -142,9 +143,7 @@ def Run(strategy, params, file_path, divide_to_months):
             for res in results:
                 for strat in res:
                     ret_strategy = []
-                    sum_return_strategy = 0
                     if index == 0:
-                        print(strat.strategycls.__name__)
                         if strat.strategycls.__name__ == "BuyAndHold":
                             sum_return_asset = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
                         else:
@@ -216,10 +215,10 @@ def Run(strategy, params, file_path, divide_to_months):
             # matplotlib.pyplot.show()
 
             print("From:", from_date, "To:", to_date, "\n", "Strategy =", st.__name__,  "\n", "Process Time =",
-                  (time.time() - start_time), "s")
+                  (time.time() - start_time), "sec")
     columns = pd.MultiIndex.from_tuples(results_data_columns)
-    print(results_data_rows)
     df = pd.DataFrame(results_data_rows)
     df.columns = columns
     df.to_excel('Results\\' + file_path + '.xlsx', merge_cells=True)
+    print("Total Process Time =", (time.time() - start_analyze_time) / 60, "min")
     # pd.DataFrame(results_data).to_csv('Results\\result.csv')
