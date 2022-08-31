@@ -94,11 +94,12 @@ def Run(strategy, params, file_path, divide_to_months):
         max_dd_asset_percent = 0
         max_dd_asset_time = 0
         ret_asset = []
+        return_asset = 0
         for st in strategy:
             start_time = time.time()
             # Create a cerebro entity
             # cerebro = bt.Cerebro()
-            cerebro = bt.Cerebro(runonce=False, optreturn=True)
+            cerebro = bt.Cerebro(runonce=False)
 
             # Add a strategy
             if st.__name__ == "BuyAndHold":
@@ -136,7 +137,9 @@ def Run(strategy, params, file_path, divide_to_months):
             cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drowdown')
             cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name='timedrowdown', timeframe=bt.TimeFrame.Minutes,
                                 compression=60)
-
+            cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualreturn')
+            cerebro.addanalyzer(bt.analyzers.Transactions, _name='transactions')
+            cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='tradeanalyzer')
             results = cerebro.run(timeframe=bt.TimeFrame.Minutes, compression=60)
 
             ### Log Bloc
@@ -145,30 +148,48 @@ def Run(strategy, params, file_path, divide_to_months):
                     ret_strategy = []
                     if index == 0:
                         if strat.strategycls.__name__ == "BuyAndHold":
-                            sum_return_asset = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
+                            # sum_return_asset = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
+                            sum_return_asset = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
+                                                   4] - 10000
                         else:
-                            sum_return_strategy = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
-                            print(sum_return_strategy)
+                            # sum_return_strategy = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
+                            sum_return_strategy = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
+                                                   4] - 10000
                             results_data_rows['Strategy Name'].append(strat.strategycls.__name__)
                             results_data_rows['Currency'].append(asset)
                             results_data_rows['TimeFrame'].append(timeframe)
+                            # results_data_rows['Total_Asset_Return'].append(sum_return_asset)
                             results_data_rows['Total_Asset_Return'].append(sum_return_asset)
                             for p, value in params.items():
                                 results_data_rows[p].append(strat.p._getkwargs()[p])
+                            # results_data_rows['Total_Strategy_Return'].append(sum_return_strategy)
                             results_data_rows['Total_Strategy_Return'].append(sum_return_strategy)
                             results_data_rows['Total_Diff_Return'].append(sum_return_asset - sum_return_strategy)
                     else:  # Divided To Month
-                        for i in list(strat.analyzers.timereturn.get_analysis().items()):
-                            if i[1] != 0:
-                                if strat.strategycls.__name__ == "BuyAndHold":
-                                    max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
-                                    max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
+                        # for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                        #     if i[1] != 0:
+                        #         if strat.strategycls.__name__ == "BuyAndHold":
+                        #             max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
+                        #             max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
+                        #             ret_asset.append(i[1])
+                        #         else:
+                        #             ret_strategy.append(i[1])
+                        if strat.strategycls.__name__ == "BuyAndHold":
+                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                                if i[1] != 0:
                                     ret_asset.append(i[1])
-                                else:
-                                    ret_strategy.append(i[1])
+                            max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
+                            max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
+                            return_asset = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4] - 10000
+
                         if strat.strategycls.__name__ != "BuyAndHold":
-                            results_data_rows['Return_Asset_' + str(index)].append(sum(ret_asset))
-                            results_data_rows['Return_Strategy_' + str(index)].append(sum(ret_strategy))
+                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                                if i[1] != 0:
+                                    ret_strategy.append(i[1])
+                            # results_data_rows['Return_Asset_' + str(index)].append(sum(ret_asset))
+                            # results_data_rows['Return_Strategy_' + str(index)].append(sum(ret_strategy))
+                            results_data_rows['Return_Asset_' + str(index)].append(return_asset)
+                            results_data_rows['Return_Strategy_' + str(index)].append(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4] - 10000)
                             results_data_rows['MaxDrowDown(%)_Asset_' + str(index)].append(max_dd_asset_percent)
                             results_data_rows['MaxDrowDown(Time)_Asset_' + str(index)].append(max_dd_asset_time)
                             results_data_rows['MaxDrowDown(%)_Strategy_' + str(index)].append(
