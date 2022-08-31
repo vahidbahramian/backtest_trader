@@ -4,6 +4,7 @@ Created on Thu Feb 27 00:17:10 2020
 
 @author: Amin
 """
+import os
 
 import numpy as np
 import pandas as pd
@@ -78,7 +79,7 @@ def get_market_data(asset, timeFrame='4h', start_time=date(2019, 11, 1), end_tim
         if saveFile:            
             fromTime = df.index[0]
             toTime = df.index[-1]
-            fileName = 'data\\Binance_{}_{}_{}_{}.csv'.format(asset, timeFrame, fromTime, toTime).replace(':', '-')
+            fileName = os.path.join('data', 'Binance_{}_{}_{}_{}.csv').format(asset, timeFrame, fromTime, toTime).replace(':', '-')
             df.to_csv(fileName, index=True)
     
         return df

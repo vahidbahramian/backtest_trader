@@ -51,7 +51,8 @@ def Run(strategy, params, file_path, divide_to_months):
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    data_path = os.path.join(modpath, 'data\\' + file_path)
+
+    data_path = os.path.join(os.path.join(modpath, 'data'), file_path)
 
     asset = get_asset(data_path)
     range_dates = get_date(data_path)
@@ -240,6 +241,6 @@ def Run(strategy, params, file_path, divide_to_months):
     columns = pd.MultiIndex.from_tuples(results_data_columns)
     df = pd.DataFrame(results_data_rows)
     df.columns = columns
-    df.to_excel('Results\\' + file_path + '.xlsx', merge_cells=True)
+    df.to_excel(os.path.join('Results', file_path) + '.xlsx', merge_cells=True)
     print("Total Process Time =", (time.time() - start_analyze_time) / 60, "min")
     # pd.DataFrame(results_data).to_csv('Results\\result.csv')
