@@ -1,3 +1,5 @@
+import time
+
 import backtrader as bt
 import Indicator as ind
 
@@ -7,14 +9,18 @@ class BuyAndHold(bt.Strategy):
     def __init__(self):
         self.dataclose = self.datas[0].close
         self.order = None
+        self.candle_index = 0
 
     def next(self):
-
+        self.candle_index += 1
+        if len(self.data.close.array) - self.candle_index == 1:
+            self.order = self.sell()
         if self.order:
             return
 
         if not self.position:
             self.order = self.buy()
+
 
 
 class Strategy_1(bt.Strategy):
@@ -134,6 +140,10 @@ class Strategy_1(bt.Strategy):
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
 
+    def stop(self):
+        if self.position:
+            self.order = self.sell()
+
 
 class Strategy_2(bt.Strategy):
     params = (
@@ -157,7 +167,7 @@ class Strategy_2(bt.Strategy):
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
         self.dataclose = self.datas[0].close
-
+        self.candle_index = 0
         # To keep track of pending orders and buy price/commission
         self.order = None
         self.buyprice = None
@@ -214,6 +224,9 @@ class Strategy_2(bt.Strategy):
                  (trade.pnl, trade.pnlcomm))
 
     def next(self):
+        self.candle_index += 1
+        if len(self.data.close.array) - self.candle_index == 1:
+            self.order = self.sell()
         E = 0
         STD = 0
         for i in range(0, -51):

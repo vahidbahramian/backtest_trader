@@ -137,9 +137,9 @@ def Run(strategy, params, file_path, divide_to_months):
             cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drowdown')
             cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name='timedrowdown', timeframe=bt.TimeFrame.Minutes,
                                 compression=60)
-            cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annualreturn')
+            cerebro.addanalyzer(bt.analyzers.LogReturnsRolling, _name='logreturn', timeframe=bt.TimeFrame.Minutes,
+                                compression=60)
             cerebro.addanalyzer(bt.analyzers.Transactions, _name='transactions')
-            cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='tradeanalyzer')
             results = cerebro.run(timeframe=bt.TimeFrame.Minutes, compression=60)
 
             ### Log Bloc
@@ -148,13 +148,13 @@ def Run(strategy, params, file_path, divide_to_months):
                     ret_strategy = []
                     if index == 0:
                         if strat.strategycls.__name__ == "BuyAndHold":
-                            # sum_return_asset = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
-                            sum_return_asset = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
-                                                   4] - 10000
+                            sum_return_asset = sum(j for i, j in list(strat.analyzers.logreturn.get_analysis().items()))
+                            # sum_return_asset = abs(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
+                            #                        4]) - 10000
                         else:
-                            # sum_return_strategy = sum(j for i, j in list(strat.analyzers.timereturn.get_analysis().items()))
-                            sum_return_strategy = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
-                                                   4] - 10000
+                            sum_return_strategy = sum(j for i, j in list(strat.analyzers.logreturn.get_analysis().items()))
+                            # sum_return_strategy = abs(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][
+                            #                        4]) - 10000
                             results_data_rows['Strategy Name'].append(strat.strategycls.__name__)
                             results_data_rows['Currency'].append(asset)
                             results_data_rows['TimeFrame'].append(timeframe)
@@ -175,21 +175,21 @@ def Run(strategy, params, file_path, divide_to_months):
                         #         else:
                         #             ret_strategy.append(i[1])
                         if strat.strategycls.__name__ == "BuyAndHold":
-                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                            for i in list(strat.analyzers.logreturn.get_analysis().items()):
                                 if i[1] != 0:
                                     ret_asset.append(i[1])
                             max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
                             max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
-                            return_asset = list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4] - 10000
+                            # return_asset = abs(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4]) - 10000
 
                         if strat.strategycls.__name__ != "BuyAndHold":
-                            for i in list(strat.analyzers.timereturn.get_analysis().items()):
+                            for i in list(strat.analyzers.logreturn.get_analysis().items()):
                                 if i[1] != 0:
                                     ret_strategy.append(i[1])
-                            # results_data_rows['Return_Asset_' + str(index)].append(sum(ret_asset))
-                            # results_data_rows['Return_Strategy_' + str(index)].append(sum(ret_strategy))
-                            results_data_rows['Return_Asset_' + str(index)].append(return_asset)
-                            results_data_rows['Return_Strategy_' + str(index)].append(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4] - 10000)
+                            results_data_rows['Return_Asset_' + str(index)].append(sum(ret_asset))
+                            results_data_rows['Return_Strategy_' + str(index)].append(sum(ret_strategy))
+                            # results_data_rows['Return_Asset_' + str(index)].append(return_asset)
+                            # results_data_rows['Return_Strategy_' + str(index)].append(abs(list(strat.analyzers.transactions.get_analysis().items())[-1][1][0][4]) - 10000)
                             results_data_rows['MaxDrowDown(%)_Asset_' + str(index)].append(max_dd_asset_percent)
                             results_data_rows['MaxDrowDown(Time)_Asset_' + str(index)].append(max_dd_asset_time)
                             results_data_rows['MaxDrowDown(%)_Strategy_' + str(index)].append(
@@ -227,7 +227,7 @@ def Run(strategy, params, file_path, divide_to_months):
             # quantstats.reports.html(returns, output='returns.html')
 
             # Print out the final result
-            print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+            # print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
             # Plot the result
             # cerebro.plot()
