@@ -268,7 +268,7 @@ class Strategy_2(bt.Strategy):
                             self.order = self.buy()
             else:
                 if (1 - self.params.c * self.stddev[0]/self.sma[0]) < self.avg[0] < (1 + self.params.d * self.stddev[0]/self.sma[0]) and \
-                        (self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < self.params.y * self.stddev[0]:
+                        abs(self.ichimoku.l.senkou_span_a[0] - self.ichimoku.l.senkou_span_b[0]) < self.params.y * self.stddev[0]:
                         #self.ichimoku.l.senkou_span_b[0] - self.ichimoku.l.senkou_span_a[0] < \
                         #self.ichimoku.l.senkou_span_b[-25] - self.ichimoku.l.senkou_span_a[-25]):
                     if self.super_trend_F[-1] == 0 and self.super_trend_F[0] == 1:

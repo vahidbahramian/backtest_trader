@@ -146,7 +146,7 @@ def Run(strategy, params, file_path, divide_to_months):
             cerebro.addanalyzer(bt.analyzers.Transactions, _name='transactions')
             results = cerebro.run(timeframe=bt.TimeFrame.Minutes, compression=60)
 
-            ### Log Bloc
+            ### Log Block
             for res in results:
                 for strat in res:
                     ret_strategy = []
