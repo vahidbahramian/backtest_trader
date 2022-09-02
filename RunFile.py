@@ -39,12 +39,15 @@ def Run(strategy, params, file_path, divide_to_months):
     start_analyze_time = time.time()
     results_data_columns = [('', '', 'Strategy Name'), ('', '', 'Currency'), ('', '', 'TimeFrame'),
                             ('', 'Total_Return', 'Asset'), ('', 'Total_Return', 'Strategy'),
-                            ('', 'Total_Return', 'Diff'), ('', 'STD', '')]
+                            ('', 'Total_Return', 'Diff'), ('', 'STD', ''),  ('', 'MaxDD(%)', 'Asset'),
+                            ('', 'MaxDD(%)', 'Strategy'), ('', 'MaxDD(Time)', 'Asset'), ('', 'MaxDD(Time)', 'Strategy')]
     for i in params.keys():
         results_data_columns.append(('', 'Parameters', i))
 
     results_data_rows = {'Strategy Name': [], 'Currency': [], 'TimeFrame': [], 'Total_Asset_Return': [],
-                         'Total_Strategy_Return': [], 'Total_Diff_Return': [], 'Total_STD': []}
+                         'Total_Strategy_Return': [], 'Total_Diff_Return': [], 'Total_STD': [],
+                         'Total_MaxDD(%)_Asset': [], 'Total_MaxDD(%)_Strategy': [], 'Total_MaxDD(Time)_Asset': [],
+                         'Total_MaxDD(Time)_Strategy': []}
     for i in params.keys():
         results_data_rows[i] = []
 
@@ -157,8 +160,8 @@ def Run(strategy, params, file_path, divide_to_months):
                 sum_return_strategy = []
                 # if index == 0:
                 if strat.strategycls.__name__ == "BuyAndHold":
-                    # max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
-                    # max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
+                    max_dd_asset_percent = strat.analyzers.drowdown.get_analysis()['max']['drawdown']
+                    max_dd_asset_time = strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod']
                     for i in list(strat.analyzers.logreturn.get_analysis().items()):
                         # if i[1] != 0:
                         sum_return_asset.append(i[1])
@@ -187,7 +190,13 @@ def Run(strategy, params, file_path, divide_to_months):
                                                                       / standarddev(sum_return_asset))
                     except ZeroDivisionError as e:
                         results_data_rows['Total_STD'].append("")
-                    if len(res) == 1:
+                    results_data_rows['Total_MaxDD(%)_Asset'].append(max_dd_asset_percent)
+                    results_data_rows['Total_MaxDD(%)_Strategy'].append(
+                        strat.analyzers.drowdown.get_analysis()['max']['drawdown'])
+                    results_data_rows['Total_MaxDD(Time)_Asset'].append(max_dd_asset_time)
+                    results_data_rows['Total_MaxDD(Time)_Strategy'].append(
+                        strat.analyzers.timedrowdown.get_analysis()['maxdrawdownperiod'])
+                    if len(results) == 1:
                         df = pd.DataFrame([(x, y, z) for ((x, y), z) in
                                            zip(list(strat.analyzers.logreturn.get_analysis().items()),
                                                sum_return_asset)])
